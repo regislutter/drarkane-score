@@ -24,4 +24,4 @@ npm run preview    # prévisualiser le build de production
 
 L'application est déployée automatiquement sur [Vercel](https://vercel.com) à chaque push sur la branche `main`.
 
-> URL de production : *(sera ajoutée après le premier déploiement)*
+> URL de production : **[https://drarkane.vercel.app](https://drarkane.vercel.app)**
