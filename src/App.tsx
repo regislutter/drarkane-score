@@ -2,6 +2,7 @@ import { useState } from 'react'
 import HomePage    from './pages/HomePage'
 import PlayersPage from './pages/PlayersPage'
 import GamePage    from './pages/GamePage'
+import EditRoundPage from './pages/EditRoundPage'
 import ScorePage   from './pages/ScorePage'
 import {
   saveGame,
@@ -30,6 +31,9 @@ export default function App() {
   const [teams,           setTeams]           = useState<Team[] | null>(resume?.teams ?? null)
   const [completedRounds, setCompletedRounds] = useState<RoundData[]>(resume?.completedRounds ?? [])
   const [history,         setHistory]         = useState<GameRecord[]>(() => getHistory())
+
+  // Index de la manche terminée en cours de correction (null = manche en cours normale)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
   /* ── Transitions ── */
 
@@ -78,11 +82,25 @@ export default function App() {
     // Sinon, GamePage est remontée avec key=newRounds.length → nouvelle manche automatiquement
   }
 
+  function handleEditRoundChange(round: RoundData) {
+    if (editingIndex === null) return
+    const newRounds = completedRounds.map((r, i) => (i === editingIndex ? round : r))
+    setCompletedRounds(newRounds)
+    saveCurrentGame({
+      view:            'game',
+      config:          gameConfig,
+      players,
+      teams,
+      completedRounds: newRounds,
+    })
+  }
+
   function handleNewGame() {
     clearCurrentGame()
     setPlayers([])
     setTeams(null)
     setCompletedRounds([])
+    setEditingIndex(null)
     setView('home')
   }
 
@@ -91,6 +109,7 @@ export default function App() {
     setPlayers([])
     setTeams(null)
     setCompletedRounds([])
+    setEditingIndex(null)
     setView('home')
   }
 
@@ -118,16 +137,36 @@ export default function App() {
 
   if (view === 'game') {
     return (
-      <GamePage
-        // key force le remontage à chaque nouvelle manche
-        key={completedRounds.length}
-        config={gameConfig}
-        players={players}
-        teams={teams}
-        completedRounds={completedRounds}
-        onRoundComplete={handleRoundComplete}
-        onAbort={handleAbortGame}
-      />
+      <>
+        {/* La manche en cours reste montée (masquée) pendant la correction
+            pour ne pas perdre les saisies non validées. */}
+        <div className={editingIndex !== null ? 'hidden' : 'contents'}>
+          <GamePage
+            // key force le remontage à chaque nouvelle manche
+            key={completedRounds.length}
+            config={gameConfig}
+            players={players}
+            teams={teams}
+            completedRounds={completedRounds}
+            onRoundComplete={handleRoundComplete}
+            onAbort={handleAbortGame}
+            onEditPrevious={() => setEditingIndex(completedRounds.length - 1)}
+          />
+        </div>
+
+        {editingIndex !== null && (
+          <EditRoundPage
+            key={editingIndex}
+            index={editingIndex}
+            config={gameConfig}
+            players={players}
+            teams={teams}
+            round={completedRounds[editingIndex]}
+            onChange={handleEditRoundChange}
+            onNavigate={setEditingIndex}
+          />
+        )}
+      </>
     )
   }
 

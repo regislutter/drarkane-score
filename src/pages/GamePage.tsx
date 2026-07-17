@@ -16,9 +16,10 @@ interface GamePageProps {
   completedRounds:  RoundData[]
   onRoundComplete:  (round: RoundData) => void
   onAbort:          () => void
+  onEditPrevious:   () => void
 }
 
-export default function GamePage({ config, players, teams, completedRounds, onRoundComplete, onAbort }: GamePageProps) {
+export default function GamePage({ config, players, teams, completedRounds, onRoundComplete, onAbort, onEditPrevious }: GamePageProps) {
   const currentRound = completedRounds.length
   const maxTricks    = TRICKS_PER_ROUND[config.playerCount]
 
@@ -138,7 +139,18 @@ export default function GamePage({ config, players, teams, completedRounds, onRo
       <PageLayout
         header={
           <div className="px-4 py-3 border-b border-border bg-bg flex-shrink-0 flex items-center">
-            <div className="flex-1" />
+            <div className="flex-1 flex justify-start">
+              {currentRound > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onEditPrevious}
+                  aria-label="Corriger une manche précédente"
+                >
+                  ←
+                </Button>
+              )}
+            </div>
             <RoundIndicator current={currentRound + 1} />
             <div className="flex-1 flex justify-end">
               <Button
@@ -158,13 +170,18 @@ export default function GamePage({ config, players, teams, completedRounds, onRo
               Valider les paris →
             </Button>
           ) : (
-            <div className="flex gap-2">
-              <Button variant="danger" className="flex-1" onClick={() => setShowOverwhelmedDlg(true)}>
-                ☠ Submergés
+            <div className="flex flex-col gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setPhase('betting')}>
+                ← Retour aux paris
               </Button>
-              <Button className="flex-1" disabled={!canEndRound} onClick={() => { setTerrorValue(0); setShowTerrorDlg(true) }}>
-                Fin de manche →
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="danger" className="flex-1" onClick={() => setShowOverwhelmedDlg(true)}>
+                  ☠ Submergés
+                </Button>
+                <Button className="flex-1" disabled={!canEndRound} onClick={() => { setTerrorValue(0); setShowTerrorDlg(true) }}>
+                  Fin de manche →
+                </Button>
+              </div>
             </div>
           )
         }
