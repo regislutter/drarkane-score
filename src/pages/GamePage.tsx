@@ -14,12 +14,14 @@ interface GamePageProps {
   players:          Player[]
   teams:            Team[] | null
   completedRounds:  RoundData[]
+  phase:            'betting' | 'playing'
+  onPhaseChange:    (phase: 'betting' | 'playing') => void
   onRoundComplete:  (round: RoundData) => void
   onAbort:          () => void
   onEditPrevious:   () => void
 }
 
-export default function GamePage({ config, players, teams, completedRounds, onRoundComplete, onAbort, onEditPrevious }: GamePageProps) {
+export default function GamePage({ config, players, teams, completedRounds, phase, onPhaseChange, onRoundComplete, onAbort, onEditPrevious }: GamePageProps) {
   const currentRound = completedRounds.length
   const maxTricks    = TRICKS_PER_ROUND[config.playerCount]
 
@@ -32,7 +34,6 @@ export default function GamePage({ config, players, teams, completedRounds, onRo
 
   const initMap = (): Record<string, number> => Object.fromEntries(players.map(p => [p.id, 0]))
 
-  const [phase,     setPhase]     = useState<'betting' | 'playing'>('betting')
   const [bets,      setBets]      = useState<Record<string, number>>(initMap)
   const [tricks,    setTricks]    = useState<Record<string, number>>(initMap)
   const [dragons,   setDragons]   = useState<Record<string, number>>(initMap)
@@ -166,12 +167,12 @@ export default function GamePage({ config, players, teams, completedRounds, onRo
         }
         footer={
           phase === 'betting' ? (
-            <Button size="lg" onClick={() => setPhase('playing')}>
+            <Button size="lg" onClick={() => onPhaseChange('playing')}>
               Valider les paris →
             </Button>
           ) : (
             <div className="flex flex-col gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setPhase('betting')}>
+              <Button variant="ghost" size="sm" onClick={() => onPhaseChange('betting')}>
                 ← Retour aux paris
               </Button>
               <div className="flex gap-2">

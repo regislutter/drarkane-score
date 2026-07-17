@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import HomePage    from './pages/HomePage'
 import PlayersPage from './pages/PlayersPage'
 import GamePage    from './pages/GamePage'
@@ -35,6 +35,9 @@ export default function App() {
   // Index de la manche terminée en cours de correction (null = manche en cours normale)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
+  // Phase de la manche en cours (liftée ici pour piloter le retour arrière natif)
+  const [phase, setPhase] = useState<'betting' | 'playing'>('betting')
+
   /* ── Transitions ── */
 
   function handleStart(config: GameConfig) {
@@ -46,6 +49,7 @@ export default function App() {
     setPlayers(playerList)
     setTeams(teamList)
     setCompletedRounds([])
+    setPhase('betting')
     setView('game')
     saveCurrentGame({
       view:            'game',
@@ -59,6 +63,7 @@ export default function App() {
   function handleRoundComplete(roundData: RoundData) {
     const newRounds = [...completedRounds, roundData]
     setCompletedRounds(newRounds)
+    setPhase('betting') // la manche suivante démarre en phase de paris
 
     if (newRounds.length === 3) {
       saveGame({
@@ -101,6 +106,7 @@ export default function App() {
     setTeams(null)
     setCompletedRounds([])
     setEditingIndex(null)
+    setPhase('betting')
     setView('home')
   }
 
@@ -110,8 +116,58 @@ export default function App() {
     setTeams(null)
     setCompletedRounds([])
     setEditingIndex(null)
+    setPhase('betting')
     setView('home')
   }
+
+  /* ── Retour arrière natif (geste de swipe / bouton retour) ──
+     L'app est une machine à états sans URL : sans cela, le geste retour
+     ferait un history.back() qui sort de la PWA. On piège le geste et on
+     le mappe sur le retour logique de l'écran courant. */
+
+  function goBack(): boolean {
+    // Renvoie true si le retour a été géré dans l'app, false pour laisser quitter.
+    if (editingIndex !== null) {
+      // Correction ouverte : on remonte la chaîne de manches, puis on referme.
+      setEditingIndex(editingIndex < completedRounds.length - 1 ? editingIndex + 1 : null)
+      return true
+    }
+    if (view === 'game') {
+      if (phase === 'playing') {
+        setPhase('betting')             // ↩ retour à la saisie des paris
+        return true
+      }
+      if (completedRounds.length > 0) {
+        setEditingIndex(completedRounds.length - 1) // ↩ corriger la manche précédente
+        return true
+      }
+      return true                       // manche 1 / paris : on reste dans l'app
+    }
+    if (view === 'players') {
+      setView('home')
+      return true
+    }
+    if (view === 'score') {
+      return true                       // écran final : on évite de quitter par inadvertance
+    }
+    return false                        // accueil : on laisse le geste quitter l'app
+  }
+
+  const goBackRef = useRef(goBack)
+  goBackRef.current = goBack
+
+  useEffect(() => {
+    // Entrée « piège » : donne un cran d'historique à consommer par le geste retour.
+    window.history.pushState({ trap: true }, '')
+    const onPop = () => {
+      if (goBackRef.current()) {
+        // Retour géré dans l'app : on ré-arme le piège pour le prochain geste.
+        window.history.pushState({ trap: true }, '')
+      }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   /* ── Rendu ── */
 
@@ -148,6 +204,8 @@ export default function App() {
             players={players}
             teams={teams}
             completedRounds={completedRounds}
+            phase={phase}
+            onPhaseChange={setPhase}
             onRoundComplete={handleRoundComplete}
             onAbort={handleAbortGame}
             onEditPrevious={() => setEditingIndex(completedRounds.length - 1)}
