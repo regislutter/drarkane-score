@@ -1,4 +1,5 @@
 import StepperInput from '@/components/StepperInput'
+import { TeamScores } from '@/components/TeamScores'
 import { cn } from '@/lib/utils'
 import type { Player, Team } from '@/utils/scoring'
 
@@ -16,17 +17,20 @@ interface PlayingPhaseProps {
   onDragonChange:    (playerId: string, val: number) => void
   onTreasureChange:  (playerId: string, val: number) => void
   playerTotals:      Record<string, number> | null
+  teamTotals:        Record<string, number> | null
 }
 
 export function PlayingPhase({
   players, teams, bets, tricks, dragons, treasures,
   treasuresActive, maxTricks, totalTricksPlayed,
-  onTrickChange, onDragonChange, onTreasureChange, playerTotals,
+  onTrickChange, onDragonChange, onTreasureChange, playerTotals, teamTotals,
 }: PlayingPhaseProps) {
   const tricksMaxReached = totalTricksPlayed >= maxTricks
 
   return (
     <div>
+      {teams && teamTotals && <TeamScores teams={teams} teamTotals={teamTotals} />}
+
       {/* Compteur de plis */}
       <div className="flex items-center justify-between bg-surface border border-border rounded-md px-[14px] py-2.5 mb-[14px] text-[14px] text-text-2">
         <span>Plis joués</span>

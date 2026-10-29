@@ -12,7 +12,8 @@ import {
   clearCurrentGame,
   type GameRecord,
 } from './utils/storage'
-import type { GameConfig, Player, Team, RoundData } from './utils/scoring'
+import { completeRound, createRoundDraft } from './utils/scoring'
+import type { GameConfig, Player, Team, RoundData, RoundDraft, RoundPhase } from './utils/scoring'
 
 type View = 'home' | 'players' | 'game' | 'score'
 
@@ -33,10 +34,28 @@ export default function App() {
   const [history,         setHistory]         = useState<GameRecord[]>(() => getHistory())
 
   // Index de la manche terminée en cours de correction (null = manche en cours normale)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(resume?.editingIndex ?? null)
 
   // Phase de la manche en cours (liftée ici pour piloter le retour arrière natif)
-  const [phase, setPhase] = useState<'betting' | 'playing'>('betting')
+  const [phase, setPhase] = useState<RoundPhase>(resume?.phase ?? 'betting')
+  const [roundDraft, setRoundDraft] = useState<RoundDraft>(() =>
+    resume?.currentRound ?? createRoundDraft(resume?.players ?? [])
+  )
+
+  /* Toute modification métier de la partie active est sauvegardée ici. */
+  useEffect(() => {
+    if (view !== 'game' || players.length === 0) return
+    saveCurrentGame({
+      view: 'game',
+      config: gameConfig,
+      players,
+      teams,
+      completedRounds,
+      phase,
+      currentRound: roundDraft,
+      editingIndex,
+    })
+  }, [view, gameConfig, players, teams, completedRounds, phase, roundDraft, editingIndex])
 
   /* ── Transitions ── */
 
@@ -50,20 +69,17 @@ export default function App() {
     setTeams(teamList)
     setCompletedRounds([])
     setPhase('betting')
+    setRoundDraft(createRoundDraft(playerList))
+    setEditingIndex(null)
     setView('game')
-    saveCurrentGame({
-      view:            'game',
-      config:          gameConfig,
-      players:         playerList,
-      teams:           teamList,
-      completedRounds: [],
-    })
   }
 
-  function handleRoundComplete(roundData: RoundData) {
+  function handleRoundComplete() {
+    const roundData = completeRound(roundDraft, players, gameConfig.treasures)
     const newRounds = [...completedRounds, roundData]
     setCompletedRounds(newRounds)
     setPhase('betting') // la manche suivante démarre en phase de paris
+    setRoundDraft(createRoundDraft(players))
 
     if (newRounds.length === 3) {
       saveGame({
@@ -75,14 +91,6 @@ export default function App() {
       setHistory(getHistory())
       clearCurrentGame()
       setView('score')
-    } else {
-      saveCurrentGame({
-        view:            'game',
-        config:          gameConfig,
-        players,
-        teams,
-        completedRounds: newRounds,
-      })
     }
     // Sinon, GamePage est remontée avec key=newRounds.length → nouvelle manche automatiquement
   }
@@ -91,13 +99,6 @@ export default function App() {
     if (editingIndex === null) return
     const newRounds = completedRounds.map((r, i) => (i === editingIndex ? round : r))
     setCompletedRounds(newRounds)
-    saveCurrentGame({
-      view:            'game',
-      config:          gameConfig,
-      players,
-      teams,
-      completedRounds: newRounds,
-    })
   }
 
   function handleNewGame() {
@@ -107,6 +108,7 @@ export default function App() {
     setCompletedRounds([])
     setEditingIndex(null)
     setPhase('betting')
+    setRoundDraft(createRoundDraft([]))
     setView('home')
   }
 
@@ -117,6 +119,7 @@ export default function App() {
     setCompletedRounds([])
     setEditingIndex(null)
     setPhase('betting')
+    setRoundDraft(createRoundDraft([]))
     setView('home')
   }
 
@@ -205,7 +208,9 @@ export default function App() {
             teams={teams}
             completedRounds={completedRounds}
             phase={phase}
+            roundDraft={roundDraft}
             onPhaseChange={setPhase}
+            onRoundDraftChange={setRoundDraft}
             onRoundComplete={handleRoundComplete}
             onAbort={handleAbortGame}
             onEditPrevious={() => setEditingIndex(completedRounds.length - 1)}
