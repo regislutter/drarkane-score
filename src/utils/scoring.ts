@@ -29,6 +29,46 @@ export interface RoundData {
   scores?:     Record<string, number>
 }
 
+export type RoundPhase = 'betting' | 'playing'
+
+/** Saisie non validée de la manche en cours. */
+export interface RoundDraft {
+  bets:        Record<string, number>
+  tricks:      Record<string, number>
+  dragons:     Record<string, number>
+  treasures:   Record<string, number>
+  terrorValue: number
+  overwhelmed: boolean
+}
+
+export function createRoundDraft(players: Player[]): RoundDraft {
+  const emptyValues = Object.fromEntries(players.map(player => [player.id, 0]))
+  return {
+    bets:        { ...emptyValues },
+    tricks:      { ...emptyValues },
+    dragons:     { ...emptyValues },
+    treasures:   { ...emptyValues },
+    terrorValue: 0,
+    overwhelmed: false,
+  }
+}
+
+/** Transforme la saisie de la manche en résultat définitivement comptabilisé. */
+export function completeRound(
+  draft: RoundDraft,
+  players: Player[],
+  treasuresActive: boolean
+): RoundData {
+  const round: RoundData = {
+    ...draft,
+    treasures: draft.overwhelmed
+      ? Object.fromEntries(players.map(player => [player.id, 0]))
+      : draft.treasures,
+  }
+  round.scores = computeRoundScores(round, players, treasuresActive)
+  return round
+}
+
 /**
  * Calcule les scores d'une manche pour chaque joueur.
  */
