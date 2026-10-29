@@ -1,4 +1,5 @@
 import StepperInput from '@/components/StepperInput'
+import { BonusRow } from '@/components/BonusRow'
 import { TeamScores } from '@/components/TeamScores'
 import { cn } from '@/lib/utils'
 import type { Player, Team } from '@/utils/scoring'
@@ -10,20 +11,22 @@ interface PlayingPhaseProps {
   tricks:            Record<string, number>
   dragons:           Record<string, number>
   treasures:         Record<string, number>
+  bonus:             Record<string, number>
   treasuresActive:   boolean
   maxTricks:         number
   totalTricksPlayed: number
   onTrickChange:     (playerId: string, val: number) => void
   onDragonChange:    (playerId: string, val: number) => void
   onTreasureChange:  (playerId: string, val: number) => void
-  playerTotals:      Record<string, number> | null
+  onBonusChange:     (playerId: string, val: number | null) => void
+  playerTotals:     Record<string, number> | null
   teamTotals:        Record<string, number> | null
 }
 
 export function PlayingPhase({
-  players, teams, bets, tricks, dragons, treasures,
+  players, teams, bets, tricks, dragons, treasures, bonus,
   treasuresActive, maxTricks, totalTricksPlayed,
-  onTrickChange, onDragonChange, onTreasureChange, playerTotals, teamTotals,
+  onTrickChange, onDragonChange, onTreasureChange, onBonusChange, playerTotals, teamTotals,
 }: PlayingPhaseProps) {
   const tricksMaxReached = totalTricksPlayed >= maxTricks
 
@@ -96,6 +99,12 @@ export function PlayingPhase({
                     />
                   </div>
                 )}
+
+                <BonusRow
+                  name={player.name}
+                  value={bonus[player.id]}
+                  onChange={val => onBonusChange(player.id, val)}
+                />
               </div>
             </div>
           )

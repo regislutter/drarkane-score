@@ -26,6 +26,8 @@ export interface RoundData {
   treasures:   Record<string, number>
   terrorValue: number
   overwhelmed: boolean
+  /** Points de bonus : un joueur n'a une entrée que si l'option bonus est cochée pour lui. */
+  bonus?:      Record<string, number>
   scores?:     Record<string, number>
 }
 
@@ -39,6 +41,19 @@ export interface RoundDraft {
   treasures:   Record<string, number>
   terrorValue: number
   overwhelmed: boolean
+  bonus?:      Record<string, number>
+}
+
+/** Active (valeur numérique) ou désactive (null) le bonus d'un joueur. */
+export function withBonus(
+  bonus: Record<string, number> | undefined,
+  playerId: string,
+  value: number | null
+): Record<string, number> {
+  const next = { ...bonus }
+  if (value === null) delete next[playerId]
+  else next[playerId] = value
+  return next
 }
 
 export function createRoundDraft(players: Player[]): RoundDraft {
@@ -50,6 +65,7 @@ export function createRoundDraft(players: Player[]): RoundDraft {
     treasures:   { ...emptyValues },
     terrorValue: 0,
     overwhelmed: false,
+    bonus:       {},
   }
 }
 
@@ -84,7 +100,9 @@ export function computeRoundScores(
       const dragons = round.dragons?. [player.id] ?? 0
       const treas   = (!round.overwhelmed && treasuresActive) ? (round.treasures?.[player.id] ?? 0) : 0
 
-      let score = tricks * 4 + dragons * 2 + treas
+      const bonus   = round.bonus?.   [player.id] ?? 0
+
+      let score = tricks * 4 + dragons * 2 + treas + bonus
 
       const diff = Math.abs(bet - tricks)
       if      (diff === 0) score += round.terrorValue
