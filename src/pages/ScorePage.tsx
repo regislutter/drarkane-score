@@ -119,11 +119,12 @@ export default function ScorePage({ config, players, teams, rounds, onNewGame }:
               const s = round.scores?.[player.id] ?? 0
               const b = round.bets?.[player.id]   ?? 0
               const t = round.tricks?.[player.id] ?? 0
+              const bonus = round.bonus?.[player.id]
               return (
                 <div key={player.id} className="flex justify-between py-1.5 text-[14px] text-text-2 border-b border-border last:border-b-0">
                   <span className="text-[13px]">
                     {player.name}
-                    <span className="text-text-muted ml-1.5 text-[12px]">(pari {b}, réalisé {t})</span>
+                    <span className="text-text-muted ml-1.5 text-[12px]">(pari {b}, réalisé {t}{bonus !== undefined ? `, bonus ${bonus}` : ''})</span>
                   </span>
                   <span className="text-[13px]">{s} pts</span>
                 </div>

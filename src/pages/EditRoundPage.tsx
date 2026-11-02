@@ -2,7 +2,8 @@ import { PageLayout } from '@/components/PageLayout'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import StepperInput from '@/components/StepperInput'
-import { computeRoundScores, TRICKS_PER_ROUND } from '@/utils/scoring'
+import { BonusRow } from '@/components/BonusRow'
+import { computeRoundScores, TRICKS_PER_ROUND, withBonus } from '@/utils/scoring'
 import type { GameConfig, Player, Team, RoundData } from '@/utils/scoring'
 
 interface EditRoundPageProps {
@@ -102,6 +103,11 @@ export default function EditRoundPage({ index, config, players, teams, round, on
                     <StepperInput value={round.treasures?.[player.id] ?? 0} onChange={v => setField('treasures', player.id, v)} min={0} />
                   </Row>
                 )}
+                <BonusRow
+                  name={player.name}
+                  value={round.bonus?.[player.id]}
+                  onChange={v => emit({ bonus: withBonus(round.bonus, player.id, v) })}
+                />
               </div>
             </div>
           )

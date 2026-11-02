@@ -84,6 +84,7 @@ function isRoundDraft(value: unknown): value is RoundDraft {
     && typeof value.terrorValue === 'number'
     && Number.isFinite(value.terrorValue)
     && typeof value.overwhelmed === 'boolean'
+    && (value.bonus === undefined || isNumberMap(value.bonus))
 }
 
 function isRoundData(value: unknown): value is RoundData {

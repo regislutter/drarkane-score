@@ -6,7 +6,7 @@ import { PlayingPhase } from '@/components/PlayingPhase'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import StepperInput from '@/components/StepperInput'
-import { TRICKS_PER_ROUND, getCardReminder, computeTeamTotals } from '@/utils/scoring'
+import { TRICKS_PER_ROUND, getCardReminder, computeTeamTotals, withBonus } from '@/utils/scoring'
 import type { GameConfig, Player, Team, RoundData, RoundDraft, RoundPhase } from '@/utils/scoring'
 
 interface GamePageProps {
@@ -51,6 +51,10 @@ export default function GamePage({ config, players, teams, completedRounds, phas
       ...roundDraft,
       [field]: { ...roundDraft[field], [playerId]: val },
     })
+  }
+
+  function updateBonus(playerId: string, val: number | null) {
+    onRoundDraftChange({ ...roundDraft, bonus: withBonus(roundDraft.bonus, playerId, val) })
   }
 
   function handleOverwhelmedConfirm() {
@@ -193,12 +197,14 @@ export default function GamePage({ config, players, teams, completedRounds, phas
             tricks={roundDraft.tricks}
             dragons={roundDraft.dragons}
             treasures={roundDraft.treasures}
+            bonus={roundDraft.bonus ?? {}}
             treasuresActive={config.treasures}
             maxTricks={maxTricks}
             totalTricksPlayed={totalTricksPlayed}
             onTrickChange={(id, val)    => update('tricks',    id, val)}
             onDragonChange={(id, val)   => update('dragons',   id, val)}
             onTreasureChange={(id, val) => update('treasures', id, val)}
+            onBonusChange={updateBonus}
             playerTotals={playerTotals}
             teamTotals={teamTotals}
           />
